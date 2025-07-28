@@ -1,0 +1,81 @@
+// xs_begin
+// author : 'Liza'
+// arg : { var = 'scale'  name = 'Scale'     value = '-2'   range = '-8 8'         step = '0.01'        precision = '2' }
+// arg : { var = 'c'  name = 'c'     value = '2'   range = '0 8'         step = '0.01'        precision = '2' }
+// arg : { var = 'escapeRadius'  name = 'Escape radius'     value = '2'   range = '-256 256'         step = '0.01'        precision = '2' }
+// arg : { var = 'zoom'  name = 'Zoom'     value = '0'   range = '-128 4096'         step = '1'        precision = '0' }
+// arg : { var = 'iterations'    name = 'Iterations'    value = '4'   range = '2 8'         step = '1'        precision = '0' }
+// arg : { var = 'threshold'    name = 'Threshold'    value = '1'   range = '0 256'         step = '1'        precision = '0' }
+// arg : { var = 'clrMode'    name = 'Color calc.'    value = '0'   range = '0 4'         step = '1'        precision = '0' }
+// arg : { var = 'valueShift'        name = 'Value shift'      value = '0'   range = '-256 256'       step = '0.1'     precision = '1' }
+// arg : { var = 'r1'    name = 'Ballfold min r'    value = '0.5'   range = '0 2'         step = '0.01'        precision = '2' }
+// arg : { var = 'r2'    name = 'Ballfold fixed r'    value = '1.0'   range = '0 4'         step = '0.01'        precision = '2' }
+// arg : { var = 'mul1'    name = 'Multiple 1'    value = '4'   range = '1 8'         step = '0.01'        precision = '2' }
+// arg : { var = 'pow1'    name = 'Power 1'    value = '2.0'   range = '-4 4'         step = '0.01'        precision = '2' }
+// arg : { var = 'rotZ'       name = 'Rotate Z'    value = '0'  range = '-180 180'  step = '0.1'   precision = '2' }
+// arg : { var = 'shiftX'    name = 'Shift X'    value = '0'   range = '0 256'         step = '1'        precision = '0' }
+// arg : { var = 'shiftY'    name = 'Shift Y'    value = '0'   range = '0 256'         step = '1'        precision = '0' }
+// arg : { var = 'shiftZ'    name = 'Shift Z'    value = '0'   range = '0 256'         step = '1'        precision = '0' }
+// xs_end
+
+mat2 rot(float deg) {
+	float angle = radians(deg);
+	float c = cos(angle);
+	float s = sin(angle);
+	return mat2( c, -s, s, c );
+}
+
+float map( vec3 v ) {
+	float centerDist = length(v - i_volume_size / 2.);
+	v += vec3(shiftX, shiftY, shiftZ);
+	if ( v.x > float(i_volume_size) ) { v.x -= float(i_volume_size); }
+	if ( v.y > float(i_volume_size) ) { v.y -= float(i_volume_size); }
+	if ( v.z > float(i_volume_size) ) { v.z -= float(i_volume_size); }
+    v = (v + zoom) / (i_volume_size / 2. + zoom);
+	float value = valueShift;
+	int lvl = 0;
+
+	vec2 center = vec2(1., 1.);
+	vec2 translated = v.xy - center;
+	translated *= rot(rotZ);
+	v.xy = translated + center;
+
+    for (int i = 0; i < int(iterations); i++) {
+		v = clamp(v, -1.0, 1.0) * 2.0 - v;
+
+        if (length(v) < r1) {
+            v *= mul1;
+        } else if (length(v) < r2) {
+            v /= pow(length(v), pow1);
+        }
+
+        v = scale * v + c;
+
+	    if ((length(v) > escapeRadius && escapeRadius >= 0.) || (length(v) < abs(escapeRadius) && escapeRadius < 0.)) {
+			lvl += int(pow(float(i + 1), 2.));
+			if ( clrMode == 1. ) {
+	        	value += float(i);
+			} else if ( clrMode == 2. ) {
+				value += length(v);
+				break;
+			} else if ( clrMode == 3. ) {
+	        	value += float(i);
+				break;
+			} else {
+				value += length(v);
+			}
+	    }
+    }
+
+	if ( lvl > int(threshold)) {
+		if ( clrMode == 4. ) {
+			return centerDist;
+		}
+		if ( i_num_color_sels > 1 ) {
+    		value = color_sel(mod(value - 0.5, float(i_num_color_sels)));
+		}
+		return value;
+	} else {
+		return 0.;
+	}
+}
