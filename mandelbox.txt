@@ -1,5 +1,5 @@
 // xs_begin
-// author : 'Liza'
+// author : 'https://github.com/bjdhwz/magicavoxel-shaders'
 // arg : { var = 'scale'  name = 'Scale'     value = '-2'   range = '-8 8'         step = '0.01'        precision = '2' }
 // arg : { var = 'c'  name = 'c'     value = '2'   range = '0 8'         step = '0.01'        precision = '2' }
 // arg : { var = 'escapeRadius'  name = 'Escape radius'     value = '2'   range = '-256 256'         step = '0.01'        precision = '2' }

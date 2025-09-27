@@ -1,0 +1,70 @@
+// xs_begin
+// author : 'https://github.com/bjdhwz/magicavoxel-shaders'
+// arg : { var = 'IterStart'  name = 'Iter Start'  value = '0'  range = '0 8'       step = '1'     precision = '0' }
+// arg : { var = 'IterEnd'    name = 'Iter End'    value = '4'  range = '0 8'       step = '1'     precision = '0' }
+// arg : { var = 'Inverse'    name = 'Inverse'     value = '1'  range = '0 1'       step = '1'     precision = '0' }
+// arg : { var = 'scalePow'   name = 'Scale pow'   value = '3'  range = '0 256'     step = '0.01'  precision = '3' }
+// arg : { var = 'modulo'     name = 'Modulo'      value = '3'  range = '0 128'     step = '0.01'  precision = '2' }
+// arg : { var = 'MulX'       name = 'MultiplyX'   value = '1'  range = '0 256'     step = '0.01'  precision = '3' }
+// arg : { var = 'MulY'       name = 'MultiplyY'   value = '1'  range = '0 256'     step = '0.01'  precision = '3' }
+// arg : { var = 'MulZ'       name = 'MultiplyZ'   value = '1'  range = '0 256'     step = '0.01'  precision = '3' }
+// arg : { var = 'RotX'       name = 'Rotate X'    value = '0'  range = '-180 180'  step = '0.1'   precision = '2' }
+// arg : { var = 'RotY'       name = 'Rotate Y'    value = '0'  range = '-180 180'  step = '0.1'   precision = '2' }
+// arg : { var = 'RotZ'       name = 'Rotate Z'    value = '0'  range = '-180 180'  step = '0.1'   precision = '2' }
+// arg : { var = 'Rot4Z'      name = 'Rotate4 Z'   value = '0'  range = '-180 180'  step = '0.1'   precision = '2' }
+// arg : { var = 'Rot3Z'      name = 'Rotate3 Z'   value = '0'  range = '-180 180'  step = '0.1'   precision = '2' }
+// arg : { var = 'Rot2Z'      name = 'Rotate2 Z'   value = '0'  range = '-180 180'  step = '0.1'   precision = '2' }
+// arg : { var = 'Rot1Z'      name = 'Rotate1 Z'   value = '0'  range = '-180 180'  step = '0.1'   precision = '2' }
+// arg : { var = 'Rot0Z'      name = 'Rotate0 Z'   value = '0'  range = '-180 180'  step = '0.1'   precision = '2' }
+// xs_end
+
+mat2 rot(float deg) {
+	float angle = radians(deg);
+	float c = cos(angle);
+	float s = sin(angle);
+	return mat2( c, -s, s, c );
+}
+
+float map( vec3 v ) {
+	float clr = i_color_index;
+	if ( i_num_color_sels > 1 ) {
+		clr = color_sel( 0. );
+	}
+	//v += vec3(ShiftX, ShiftY, ShiftZ);
+	v *= vec3(MulX, MulY, MulZ);
+	v.yz *= rot(RotX);
+	v.xz *= rot(RotY);
+	v.xy *= rot(RotZ);
+
+	for( int i = int(IterStart); i <= int(IterEnd); i++ ) {
+		     if ( i == int(IterStart) + 0 && Rot0Z != 0. ) { v.xy *= rot(Rot0Z); }
+		else if ( i == int(IterStart) + 1 && Rot1Z != 0. ) { v.xy *= rot(Rot1Z); }
+		else if ( i == int(IterStart) + 2 && Rot2Z != 0. ) { v.xy *= rot(Rot2Z); }
+		else if ( i == int(IterStart) + 3 && Rot3Z != 0. ) { v.xy *= rot(Rot3Z); }
+		else if ( i == int(IterStart) + 4 && Rot4Z != 0. ) { v.xy *= rot(Rot4Z); }
+
+		float scale = pow(scalePow, float(i));
+		float value = float(int(mod((v.x / scale), modulo)) == 1) + float(int(mod((v.y / scale), modulo)) == 1) + float(int(mod((v.z / scale), modulo)) == 1);
+		if ( step(value, 1.) < Inverse ) {
+			clr = 0.;
+			if ( i_num_color_sels > i + 1 ) {
+				clr = color_sel( float(i) + 1. );
+			}
+			break;
+		} else if ( step(value, 0.) > Inverse ) {
+			clr = 0.;
+			if ( i_num_color_sels > i + 1 ) {
+				clr = color_sel( float(i) + 1. );
+			}
+			break;
+		}
+
+		     if ( i == int(IterStart) + 0 && Rot0Z != 0. ) { v.xy *= rot(-Rot0Z); }
+		else if ( i == int(IterStart) + 1 && Rot1Z != 0. ) { v.xy *= rot(-Rot1Z); }
+		else if ( i == int(IterStart) + 2 && Rot2Z != 0. ) { v.xy *= rot(-Rot2Z); }
+		else if ( i == int(IterStart) + 3 && Rot3Z != 0. ) { v.xy *= rot(-Rot3Z); }
+		else if ( i == int(IterStart) + 4 && Rot4Z != 0. ) { v.xy *= rot(-Rot4Z); }
+	}
+
+	return clr;
+}
